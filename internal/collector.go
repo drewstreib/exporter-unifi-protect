@@ -56,6 +56,8 @@ type Collector struct {
 	upSinceGauge                 *prometheus.Desc
 	lastSeenGauge                *prometheus.Desc
 	connectedSinceGauge          *prometheus.Desc
+	leakDetectedAtGauge		  	 *prometheus.Desc
+	externalLeakDetectedAtGauge  *prometheus.Desc
 }
 
 func NewCollector(apiClient protect.API, minDetectionSpan time.Duration, timeout time.Duration, reportError bool) *Collector {
@@ -90,6 +92,8 @@ func NewCollector(apiClient protect.API, minDetectionSpan time.Duration, timeout
 		upSinceGauge:                 prometheus.NewDesc("sensor_up_since_gauge", "Sensor UpSince status (input).", []string{"id", "name"}, nil),
 		lastSeenGauge:                prometheus.NewDesc("sensor_last_seen_gauge", "Sensor LastSeen status (input).", []string{"id", "name"}, nil),
 		connectedSinceGauge:          prometheus.NewDesc("sensor_connected_since_gauge", "Sensor ConnectedSince status (input).", []string{"id", "name"}, nil),
+		leakDetectedAtGauge:       	  prometheus.NewDesc("sensor_leak_detected_at", "Sensor LeakDetectedAt status (input).", []string{"id", "name"}, nil),
+		externalLeakDetectedAtGauge:  prometheus.NewDesc("sensor_external_leak_detected_at", "Sensor ExternalLeakDetectedAt status (input).", []string{"id", "name"}, nil),
 	}
 }
 
@@ -118,6 +122,8 @@ func (c *Collector) Describe(descs chan<- *prometheus.Desc) {
 	descs <- c.upSinceGauge
 	descs <- c.lastSeenGauge
 	descs <- c.connectedSinceGauge
+	descs <- c.leakDetectedAtGauge
+	descs <- c.externalLeakDetectedAtGauge
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
@@ -156,6 +162,8 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 		ch <- prometheus.MustNewConstMetric(c.batteryStatusPercentageGauge, prometheus.GaugeValue, float64(sensor.BatteryStatus.Percentage), sensor.ID, sensor.Name, strconv.FormatBool(sensor.BatteryStatus.IsLow))
 		ch <- prometheus.MustNewConstMetric(c.isMotionDetectedGauge, prometheus.GaugeValue, boolToInt(time.Now().Before(time.UnixMicro(sensor.MotionDetectedAt*microsec).Add(c.minDetectionSpan))), sensor.ID, sensor.Name, fmt.Sprintf("%.0f", c.minDetectionSpan.Seconds()))
 		ch <- prometheus.MustNewConstMetric(c.isOpenedGauge, prometheus.GaugeValue, boolToInt(time.Now().Before(time.UnixMicro(sensor.OpenStatusChangedAt*microsec).Add(c.minDetectionSpan)) || sensor.IsOpened), sensor.ID, sensor.Name, fmt.Sprintf("%.0f", c.minDetectionSpan.Seconds()))
+		ch <- prometheus.MustNewConstMetric(c.leakDetectedAtGauge, prometheus.GaugeValue, float64(sensor.LeakDetectedAt), sensor.ID, sensor.Name)
+		ch <- prometheus.MustNewConstMetric(c.externalLeakDetectedAtGauge, prometheus.GaugeValue, float64(sensor.ExternalLeakDetectedAt), sensor.ID, sensor.Name)
 	}
 }
 
