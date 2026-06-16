@@ -18,5 +18,5 @@ scrape_configs:
   scheme: http
   static_configs:
   - targets:
-    - unifi-protect:8080
+    - unifi-protect:9090
     - unpoller:9130
