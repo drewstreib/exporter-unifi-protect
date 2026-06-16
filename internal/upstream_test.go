@@ -58,8 +58,8 @@ func upstreamSensorFamilies(t *testing.T, path string) []string {
 		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		t.Fatalf("scan fixture: %v", err)
+	if serr := scanner.Err(); serr != nil {
+		t.Fatalf("scan fixture: %v", serr)
 	}
 
 	if len(names) == 0 {

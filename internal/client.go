@@ -82,7 +82,9 @@ func (c *Client) ensureSession(ctx context.Context) error {
 		return err
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL.JoinPath(loginPath).String(), bytes.NewReader(body))
+	loginURL := c.baseURL.JoinPath(loginPath).String()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, loginURL, bytes.NewReader(body))
 	if err != nil {
 		return err
 	}

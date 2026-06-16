@@ -85,7 +85,7 @@ func NewVersion(name, version, commit, buildSource, date string) Version {
 // Run prints the build information.
 func (v Version) Run() error {
 	//nolint:forbidigo // printing version to stdout is intended
-	fmt.Print(v.BuildInfo.String())
+	fmt.Print(v.String())
 	return nil
 }
 

@@ -18,7 +18,7 @@ import (
 // values (including those injected by docker-compose's env_file) take
 // precedence over the file. A missing file is not an error.
 func LoadDotEnv(path string) error {
-	f, err := os.Open(path) //nolint:gosec // path is operator-provided configuration
+	f, err := os.Open(path)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
@@ -50,8 +50,8 @@ func LoadDotEnv(path string) error {
 			continue
 		}
 
-		if err := os.Setenv(key, unquote(strings.TrimSpace(value))); err != nil {
-			return err
+		if serr := os.Setenv(key, unquote(strings.TrimSpace(value))); serr != nil {
+			return serr
 		}
 	}
 
