@@ -98,7 +98,7 @@ func TestCollectAirQualitySensor(t *testing.T) {
 	c := NewCollector(nil, time.Minute, time.Second, true)
 	got := collect(t, c, loadSensor(t, "testdata/up-airquality.json"))
 
-	// Air-quality readings are exported.
+	// Air-quality-only readings are exported under sensor_air_quality_*.
 	assertValue(t, got, "sensor_air_quality_aqi", 7)
 	assertValue(t, got, "sensor_air_quality_tvoc", 5.8)
 	assertValue(t, got, "sensor_air_quality_voc", 67)
@@ -107,17 +107,20 @@ func TestCollectAirQualitySensor(t *testing.T) {
 	assertValue(t, got, "sensor_air_quality_pm2p5", 1.79)
 	assertValue(t, got, "sensor_air_quality_pm4p0", 2.5)
 	assertValue(t, got, "sensor_air_quality_pm10p0", 2.9)
-	assertValue(t, got, "sensor_air_quality_humidity_percentage", 51)
-	assertValue(t, got, "sensor_air_quality_temperature_celsius", 25.4)
+
+	// Temperature/humidity from the airQuality block are surfaced on the common
+	// metrics (same names the USL sensors use), not air-quality-specific ones.
+	assertValue(t, got, "sensor_temperature_celsius", 25.4)
+	assertValue(t, got, "sensor_humidity_percentage", 51)
+	assertAbsent(t, got, "sensor_air_quality_temperature_celsius")
+	assertAbsent(t, got, "sensor_air_quality_humidity_percentage")
 
 	// Generic device metrics still come through.
 	assertValue(t, got, "sensor_info", 1)
 	assertValue(t, got, "sensor_is_connected", 1)
 
-	// Environmental/battery/bluetooth readings are null on this device and must
-	// not be exported as a misleading zero.
-	assertAbsent(t, got, "sensor_temperature_celsius")
-	assertAbsent(t, got, "sensor_humidity_percentage")
+	// Readings the device genuinely does not provide must not be exported as a
+	// misleading zero.
 	assertAbsent(t, got, "sensor_light_lux")
 	assertAbsent(t, got, "sensor_battery_status_percentage")
 	assertAbsent(t, got, "sensor_bluetooth_signal_quality")

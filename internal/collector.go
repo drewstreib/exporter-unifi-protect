@@ -62,17 +62,15 @@ type Collector struct {
 	externalLeakDetectedAtGauge  *prometheus.Desc
 
 	// Air-quality readings (UP Air Quality sensor).
-	airQualityAQIGauge         *prometheus.Desc
-	airQualityVapeGauge        *prometheus.Desc
-	airQualityTVOCGauge        *prometheus.Desc
-	airQualityVOCGauge         *prometheus.Desc
-	airQualityCO2Gauge         *prometheus.Desc
-	airQualityPM1p0Gauge       *prometheus.Desc
-	airQualityPM2p5Gauge       *prometheus.Desc
-	airQualityPM4p0Gauge       *prometheus.Desc
-	airQualityPM10p0Gauge      *prometheus.Desc
-	airQualityHumidityGauge    *prometheus.Desc
-	airQualityTemperatureGauge *prometheus.Desc
+	airQualityAQIGauge    *prometheus.Desc
+	airQualityVapeGauge   *prometheus.Desc
+	airQualityTVOCGauge   *prometheus.Desc
+	airQualityVOCGauge    *prometheus.Desc
+	airQualityCO2Gauge    *prometheus.Desc
+	airQualityPM1p0Gauge  *prometheus.Desc
+	airQualityPM2p5Gauge  *prometheus.Desc
+	airQualityPM4p0Gauge  *prometheus.Desc
+	airQualityPM10p0Gauge *prometheus.Desc
 }
 
 func NewCollector(client sensorLister, minDetectionSpan time.Duration, timeout time.Duration, reportError bool) *Collector {
@@ -112,17 +110,15 @@ func NewCollector(client sensorLister, minDetectionSpan time.Duration, timeout t
 		leakDetectedAtGauge:          prometheus.NewDesc("sensor_leak_detected_at", "Sensor LeakDetectedAt status (input).", idName, nil),
 		externalLeakDetectedAtGauge:  prometheus.NewDesc("sensor_external_leak_detected_at", "Sensor ExternalLeakDetectedAt status (input).", idName, nil),
 
-		airQualityAQIGauge:         prometheus.NewDesc("sensor_air_quality_aqi", "Air quality index.", idName, nil),
-		airQualityVapeGauge:        prometheus.NewDesc("sensor_air_quality_vape", "Air quality vape detection level.", idName, nil),
-		airQualityTVOCGauge:        prometheus.NewDesc("sensor_air_quality_tvoc", "Air quality total volatile organic compounds (ppb).", idName, nil),
-		airQualityVOCGauge:         prometheus.NewDesc("sensor_air_quality_voc", "Air quality volatile organic compounds index.", idName, nil),
-		airQualityCO2Gauge:         prometheus.NewDesc("sensor_air_quality_co2_ppm", "Air quality CO2 concentration (ppm).", idName, nil),
-		airQualityPM1p0Gauge:       prometheus.NewDesc("sensor_air_quality_pm1p0", "Air quality particulate matter PM1.0 (µg/m³).", idName, nil),
-		airQualityPM2p5Gauge:       prometheus.NewDesc("sensor_air_quality_pm2p5", "Air quality particulate matter PM2.5 (µg/m³).", idName, nil),
-		airQualityPM4p0Gauge:       prometheus.NewDesc("sensor_air_quality_pm4p0", "Air quality particulate matter PM4.0 (µg/m³).", idName, nil),
-		airQualityPM10p0Gauge:      prometheus.NewDesc("sensor_air_quality_pm10p0", "Air quality particulate matter PM10 (µg/m³).", idName, nil),
-		airQualityHumidityGauge:    prometheus.NewDesc("sensor_air_quality_humidity_percentage", "Air quality sensor humidity (input).", idName, nil),
-		airQualityTemperatureGauge: prometheus.NewDesc("sensor_air_quality_temperature_celsius", "Air quality sensor temperature (input).", idName, nil),
+		airQualityAQIGauge:    prometheus.NewDesc("sensor_air_quality_aqi", "Air quality index.", idName, nil),
+		airQualityVapeGauge:   prometheus.NewDesc("sensor_air_quality_vape", "Air quality vape detection level.", idName, nil),
+		airQualityTVOCGauge:   prometheus.NewDesc("sensor_air_quality_tvoc", "Air quality total volatile organic compounds (ppb).", idName, nil),
+		airQualityVOCGauge:    prometheus.NewDesc("sensor_air_quality_voc", "Air quality volatile organic compounds index.", idName, nil),
+		airQualityCO2Gauge:    prometheus.NewDesc("sensor_air_quality_co2_ppm", "Air quality CO2 concentration (ppm).", idName, nil),
+		airQualityPM1p0Gauge:  prometheus.NewDesc("sensor_air_quality_pm1p0", "Air quality particulate matter PM1.0 (µg/m³).", idName, nil),
+		airQualityPM2p5Gauge:  prometheus.NewDesc("sensor_air_quality_pm2p5", "Air quality particulate matter PM2.5 (µg/m³).", idName, nil),
+		airQualityPM4p0Gauge:  prometheus.NewDesc("sensor_air_quality_pm4p0", "Air quality particulate matter PM4.0 (µg/m³).", idName, nil),
+		airQualityPM10p0Gauge: prometheus.NewDesc("sensor_air_quality_pm10p0", "Air quality particulate matter PM10 (µg/m³).", idName, nil),
 	}
 }
 
@@ -162,8 +158,6 @@ func (c *Collector) Describe(descs chan<- *prometheus.Desc) {
 	descs <- c.airQualityPM2p5Gauge
 	descs <- c.airQualityPM4p0Gauge
 	descs <- c.airQualityPM10p0Gauge
-	descs <- c.airQualityHumidityGauge
-	descs <- c.airQualityTemperatureGauge
 }
 
 func (c *Collector) Collect(ch chan<- prometheus.Metric) {
@@ -185,12 +179,25 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 func (c *Collector) collectSensor(ch chan<- prometheus.Metric, sensor *Sensor) {
 	ch <- prometheus.MustNewConstMetric(c.sensorInfoGauge, prometheus.GaugeValue, 1, sensor.ID, sensor.Name, sensor.FirmwareVersion, sensor.HardwareRevision, sensor.NvrMac, "unifi", sensor.Type, sensor.ModelKey, sensor.MarketName)
 
-	// Environmental readings are null on devices that do not provide them
-	// (for example, the UP Air Quality sensor reports these under airQuality
-	// instead). Only export readings that are actually present.
-	c.measure(ch, c.temperatureGauge, sensor.Stats.Temperature, sensor.ID, sensor.Name)
+	// Environmental readings are null on devices that do not provide them. The
+	// UP Air Quality sensor reports temperature/humidity under airQuality
+	// instead of stats, so fall back to that block to keep them on the common
+	// sensor_temperature_celsius / sensor_humidity_percentage metrics rather
+	// than a device-specific name. Only export readings that are present.
+	temperature, humidity := sensor.Stats.Temperature, sensor.Stats.Humidity
+	if aq := sensor.AirQuality; aq != nil {
+		if temperature.Value == nil {
+			temperature = aq.Temperature
+		}
+
+		if humidity.Value == nil {
+			humidity = aq.Humidity
+		}
+	}
+
+	c.measure(ch, c.temperatureGauge, temperature, sensor.ID, sensor.Name)
+	c.measure(ch, c.humidityGauge, humidity, sensor.ID, sensor.Name)
 	c.measure(ch, c.lightGauge, sensor.Stats.Light, sensor.ID, sensor.Name)
-	c.measure(ch, c.humidityGauge, sensor.Stats.Humidity, sensor.ID, sensor.Name)
 
 	if bt := sensor.BluetoothConnectionState; bt != nil {
 		ch <- prometheus.MustNewConstMetric(c.bluetoothSignalQualityGauge, prometheus.GaugeValue, bt.SignalQuality, sensor.ID, sensor.Name)
@@ -255,8 +262,6 @@ func (c *Collector) collectAirQuality(ch chan<- prometheus.Metric, sensor *Senso
 	c.measure(ch, c.airQualityPM2p5Gauge, aq.PM2p5, sensor.ID, sensor.Name)
 	c.measure(ch, c.airQualityPM4p0Gauge, aq.PM4p0, sensor.ID, sensor.Name)
 	c.measure(ch, c.airQualityPM10p0Gauge, aq.PM10p0, sensor.ID, sensor.Name)
-	c.measure(ch, c.airQualityHumidityGauge, aq.Humidity, sensor.ID, sensor.Name)
-	c.measure(ch, c.airQualityTemperatureGauge, aq.Temperature, sensor.ID, sensor.Name)
 }
 
 // measure exports a single reading, skipping it when the value is absent (null)
