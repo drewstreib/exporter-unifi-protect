@@ -1,0 +1,112 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Overview
+
+A Prometheus exporter for UniFi Protect. It authenticates against a UniFi Protect
+(Dream Machine) host, polls sensor data on each scrape, and exposes it as Prometheus
+metrics over HTTP. There is a single subcommand: `serve`.
+
+## Build & Run
+
+```shell
+# Build (note: the README's `go build ./cmd` is outdated — main is one level deeper)
+go build ./cmd/exporter-unifi-protect
+
+# Run
+./exporter-unifi-protect serve --help
+./exporter-unifi-protect serve \
+  --unifi-host https://<dream-machine> --unifi-username <user> --unifi-password <pass>
+```
+
+Config is layered (later sources override earlier): YAML files (`/etc/unifi-protect/config.yaml`,
+`~/.hoomy/unifi-protect.yaml`) → environment variables (`UNIFI_HOST`, `UNIFI_USERNAME`,
+`UNIFI_PASSWORD`, etc.) → CLI flags. Use a **local** UniFi account, not a Ubiquiti SSO account.
+
+Metrics are served at `/metrics` (default listen `:9090`), with `/-/healthy` and an HTML status
+page at the route prefix. TLS/basic-auth are configured via `--web.config.file` (prometheus
+exporter-toolkit web config format).
+
+## Lint, Test, Release
+
+Tooling is managed by [aqua](https://aquaproj.github.io/) and orchestrated with
+[go-task](https://taskfile.dev). Most `.tk/*/Taskfile.yaml` files and generated configs
+(`.golangci.yaml`, `.github/workflows/*.yml`, `install.sh`) are **machine-generated and marked
+"DO NOT EDIT"** — they come from remote taskfiles (`TASK_X_REMOTE_TASKFILES=1` in `.envrc`).
+Don't hand-edit generated files; change the generating task instead.
+
+```shell
+task golangci:lint    # lint (golangci-lint via aqua, strict ruleset)
+task golangci:fix     # lint --fix
+task                  # run all "*:default" tasks
+goreleaser release    # cross-compiles linux/darwin × amd64/arm64, builds scratch Docker image
+```
+
+golangci-lint is run with a very strict config (most linters enabled). If you don't have aqua
+installed, you can run `golangci-lint run` directly.
+
+There are currently **no Go unit tests** in the repo (`internal/sense.go` is an empty stub).
+
+## Architecture
+
+The flow is small and linear — three pieces:
+
+1. **`cmd/exporter-unifi-protect/main.go`** — wires the CLI with [kong](https://github.com/alecthomas/kong).
+   The root `CMD` struct embeds `*c.Commons` (from the external `merlindorin/go-shared` module,
+   which provides version, license, and logger plumbing) and registers the `Serve` command.
+   Build-time vars (`version`, `commit`, `date`, `buildSource`, `license`) are injected via ldflags.
+
+2. **`cmd/exporter-unifi-protect/commads/serve.go`** — (note the misspelled `commads` package dir).
+   The `Serve` command holds all flags. `Run` constructs a UniFi Protect API client from
+   `merlindorin/go-unifi-protect`, type-asserts it to the underlying `rest.Requester` (which the
+   client embeds — the collector needs raw REST access, not the typed `V1` API), builds a
+   `prometheus.Registry`, registers the custom collector plus standard Go/build-info collectors,
+   and serves via the prometheus exporter-toolkit `web` package with graceful SIGTERM shutdown. It
+   also handles external-URL / route-prefix logic mirroring Prometheus's own behavior.
+
+3. **`internal/collector.go` + `internal/sensor.go`** — the `Collector` implements
+   `prometheus.Collector`. On each `Collect` (bounded by `--timeout`) it GETs
+   `/proxy/protect/api/sensors` and decodes it into the **exporter-local `Sensor` model**
+   (`sensor.go`), *not* the `go-unifi-protect` `v1.Sensor` type. We model it locally because that
+   upstream type lacks fields we need (the `airQuality` block) and types many readings as
+   non-nullable, which produced misleading zeros. Per sensor it emits environment readings,
+   battery, bluetooth, air-quality readings, boolean device-status gauges, and timestamp gauges.
+
+### Key behaviors to know
+
+- **Pull model**: metrics are fetched fresh from the UniFi API on every Prometheus scrape, not on
+  a background interval. `--timeout` bounds each collection.
+- **Detection windowing**: `sensor_is_motion_detected` and `sensor_is_opened` are derived by
+  comparing `MotionDetectedAt` / `OpenStatusChangedAt` (UniFi timestamps are **microseconds**, see
+  the `microsec` constant) against `--min-detection-span` (default `1m`). The metric reads `1` for
+  the span after a detection event. The span (in seconds) is exposed as a `detected_period` label.
+- **Presence-gating (device-type awareness)**: many `Sensor` fields are `null` on devices that
+  don't support them (e.g. the UP Air Quality sensor reports `null` for `stats.*`, battery, and
+  bluetooth, and instead populates `airQuality`). These fields are modeled as **pointers** and the
+  collector skips a metric when its value is `nil` — so a sensor only emits the metrics it actually
+  supports, instead of exporting a misleading `0`. The `measure()` helper enforces this for any
+  `{value, status}` reading.
+- **Error handling**: the collector is constructed with `reportErrors=true`; an API failure emits an
+  invalid metric rather than silently dropping data.
+- Adding a new metric means: add a `*prometheus.Desc` field, init it in `NewCollector`, send it in
+  `Describe`, and emit it in `collectSensor` from the corresponding `Sensor` field (gated on
+  presence if the field is a pointer/optional).
+
+## External module dependencies
+
+Two first-party modules do most of the heavy lifting and are pinned to commit pseudo-versions in
+`go.mod` (vendored under `vendor/`):
+- `github.com/merlindorin/go-unifi-protect` — the UniFi Protect API client (auth, base REST/WS
+  transport). Note: its `v1.Sensor` type is **incomplete** (no air-quality fields, several readings
+  typed non-nullable), which is why the collector decodes the sensors endpoint into its own model
+  via the embedded `rest.Requester` rather than calling `Sensors.List`.
+- `github.com/merlindorin/go-shared` — CLI commons, zap logger adapter, buildinfo collector, the
+  `rest`/`do` HTTP request helpers, and URL helpers.
+
+## Deployment
+
+- `Dockerfile` builds a `FROM scratch` image with default `CMD ["serve"]`.
+- `compose/compose.yaml` runs the exporter alongside Prometheus + Grafana.
+- `helm/exporter-unifi-protect/` is a Helm chart.
+- `grafana/` contains an importable example dashboard.
