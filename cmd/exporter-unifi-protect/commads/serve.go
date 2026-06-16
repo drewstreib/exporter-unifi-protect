@@ -20,6 +20,7 @@ import (
 	"github.com/merlindorin/exporter-unifi-protect/internal"
 	"github.com/merlindorin/go-shared/pkg/buildinfo"
 	"github.com/merlindorin/go-shared/pkg/cmd"
+	"github.com/merlindorin/go-shared/pkg/net/rest"
 	u "github.com/merlindorin/go-shared/pkg/net/url"
 	"github.com/merlindorin/go-shared/pkg/zapadapter"
 	"github.com/merlindorin/go-unifi-protect/pkg"
@@ -105,6 +106,16 @@ func (s Serve) Run(common *cmd.Commons) error {
 	)
 
 	cl := pkg.NewClient(s.Host, pkg.NewAuth(s.Username, s.Password), logger)
+
+	// The collector decodes the sensors endpoint into its own model (to cover
+	// fields the go-unifi-protect Sensor type does not expose, such as air
+	// quality), so it needs the underlying REST requester rather than the typed
+	// V1 API. The client returned by NewClient embeds it.
+	requester, ok := cl.(rest.Requester)
+	if !ok {
+		return fmt.Errorf("unifi client does not expose a REST requester")
+	}
+
 	reg := prometheus.NewRegistry()
 
 	logger.Debug(
@@ -112,7 +123,7 @@ func (s Serve) Run(common *cmd.Commons) error {
 		zap.Duration("min-detection-span", s.MinDetectionSpan),
 		zap.Duration("timeout", s.Timeout),
 	)
-	reg.MustRegister(internal.NewCollector(cl, s.MinDetectionSpan, s.Timeout, true))
+	reg.MustRegister(internal.NewCollector(requester, s.MinDetectionSpan, s.Timeout, true))
 
 	logger.Debug("Registering common build info collector")
 	reg.MustRegister(buildinfo.NewCollector(common.Version.BuildInfo))
