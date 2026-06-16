@@ -57,6 +57,7 @@ sboms:
 dockers:
   - image_templates:
       - 'ghcr.io/drewstreib/exporter-unifi-protect:{{ .Tag }}'
+      - 'ghcr.io/drewstreib/exporter-unifi-protect:latest'
     dockerfile: Dockerfile
     build_flag_templates:
       - "--pull"
