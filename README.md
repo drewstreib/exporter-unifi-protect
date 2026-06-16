@@ -8,6 +8,7 @@ insights into the performance and status of your UniFi Protect cameras and other
 
 * [Exporter for UniFi Protect](#exporter-for-unifi-protect)
   * [Overview](#overview)
+  * [Forked from](#forked-from)
   * [Prerequisites](#prerequisites)
   * [Installation](#installation)
     * [Using Docker](#using-docker)
@@ -27,6 +28,13 @@ This project facilitates the monitoring of UniFi Protect devices by exposing met
 Prometheus. It works by interfacing directly with UniFi Protect APIs to fetch metrics and exposes them via an HTTP
 endpoint.
 
+## Forked from
+
+This is a fork of [merlindorin/exporter-unifi-protect](https://github.com/merlindorin/exporter-unifi-protect) by
+Romain DARY, now maintained independently. Since the fork it has gained support for the UP Air Quality sensor, dropped
+the upstream `go-shared` / `go-unifi-protect` dependencies in favour of a self-contained client, and fixed leak-sensor
+metrics. The original work is licensed under the MIT License (see [License](#license)).
+
 ## Prerequisites
 
 * Go (to build and run the project outside Docker)
@@ -38,7 +46,7 @@ endpoint.
 Clone the repository to get started with the exporter:
 
 ```shell
-git clone https://github.com/merlindorin/exporter-unifi-protect.git
+git clone https://github.com/drewstreib/exporter-unifi-protect.git
 cd exporter-unifi-protect
 ```
 
@@ -120,4 +128,5 @@ request. For major changes, please open an issue first to discuss what you would
 
 ## License
 
-This project is licensed under the MIT License - [see the LICENSE file for details](./LICENSE.md).
+This project is licensed under the MIT License - [see the LICENSE file for details](./LICENSE.md). It retains the
+original copyright of Romain DARY (the upstream author) alongside subsequent contributions to this fork.

@@ -4,13 +4,13 @@ set -e
 usage() {
   this=$1
   cat <<EOF
-$this: download go binaries for merlindorin/exporter-unifi-protect
+$this: download go binaries for drewstreib/exporter-unifi-protect
 
 Usage: $this [-b <bindir>] [-d] [<tag>]
   -b sets bindir or installation directory, Defaults to ./bin
   -d turns on debug logging
    <tag> is a tag from
-   https://github.com/merlindorin/exporter-unifi-protect/releases
+   https://github.com/drewstreib/exporter-unifi-protect/releases
    If tag is missing, then the latest will be used.
 
 EOF
@@ -391,7 +391,7 @@ End of functions from https://github.com/client9/shlib
 EOF
 
 PROJECT_NAME="exporter-unifi-protect"
-OWNER=merlindorin
+OWNER=drewstreib
 REPO="exporter-unifi-protect"
 BINARY=exporter-unifi-protect
 FORMAT=tar.gz

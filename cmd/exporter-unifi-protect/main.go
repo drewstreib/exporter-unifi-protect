@@ -6,8 +6,8 @@ import (
 	kongyaml "github.com/alecthomas/kong-yaml"
 
 	"github.com/alecthomas/kong"
-	"github.com/merlindorin/exporter-unifi-protect/cmd/exporter-unifi-protect/commads"
-	"github.com/merlindorin/exporter-unifi-protect/internal/cli"
+	"github.com/drewstreib/exporter-unifi-protect/cmd/exporter-unifi-protect/commads"
+	"github.com/drewstreib/exporter-unifi-protect/internal/cli"
 )
 
 const (

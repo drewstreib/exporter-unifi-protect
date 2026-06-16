@@ -17,8 +17,8 @@ import (
 	"github.com/prometheus/exporter-toolkit/web"
 	"go.uber.org/zap"
 
-	"github.com/merlindorin/exporter-unifi-protect/internal"
-	"github.com/merlindorin/exporter-unifi-protect/internal/cli"
+	"github.com/drewstreib/exporter-unifi-protect/internal"
+	"github.com/drewstreib/exporter-unifi-protect/internal/cli"
 )
 
 type Serve struct {

@@ -1,4 +1,4 @@
-module github.com/merlindorin/exporter-unifi-protect
+module github.com/drewstreib/exporter-unifi-protect
 
 go 1.22
 
