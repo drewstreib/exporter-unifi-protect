@@ -8,17 +8,20 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-
-	"github.com/merlindorin/go-shared/pkg/net/rest"
 )
 
 const (
 	microsec = 1000
 )
 
+// sensorLister is the subset of the Protect client the collector needs.
+type sensorLister interface {
+	ListSensors(ctx context.Context) ([]Sensor, error)
+}
+
 type Collector struct {
-	requester rest.Requester
-	timeout   time.Duration
+	client  sensorLister
+	timeout time.Duration
 
 	// If true, any error encountered during collection is reported as an
 	// invalid metric (see NewInvalidMetric). Otherwise, errors are ignored
@@ -72,11 +75,11 @@ type Collector struct {
 	airQualityTemperatureGauge *prometheus.Desc
 }
 
-func NewCollector(requester rest.Requester, minDetectionSpan time.Duration, timeout time.Duration, reportError bool) *Collector {
+func NewCollector(client sensorLister, minDetectionSpan time.Duration, timeout time.Duration, reportError bool) *Collector {
 	idName := []string{"id", "name"}
 
 	return &Collector{
-		requester:    requester,
+		client:       client,
 		reportErrors: reportError,
 		timeout:      timeout,
 
@@ -168,8 +171,8 @@ func (c *Collector) Collect(ch chan<- prometheus.Metric) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
-	var sensors []Sensor
-	if err := listSensors(ctx, c.requester, &sensors); err != nil {
+	sensors, err := c.client.ListSensors(ctx)
+	if err != nil {
 		c.reportError(ch, nil, err)
 		return
 	}

@@ -18,12 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/merlindorin/exporter-unifi-protect/internal"
-	"github.com/merlindorin/go-shared/pkg/buildinfo"
-	"github.com/merlindorin/go-shared/pkg/cmd"
-	"github.com/merlindorin/go-shared/pkg/net/rest"
-	u "github.com/merlindorin/go-shared/pkg/net/url"
-	"github.com/merlindorin/go-shared/pkg/zapadapter"
-	"github.com/merlindorin/go-unifi-protect/pkg"
+	"github.com/merlindorin/exporter-unifi-protect/internal/cli"
 )
 
 type Serve struct {
@@ -53,7 +48,7 @@ type Serve struct {
 
 func (s *Serve) GetExternalURL() *url.URL {
 	if s.externalURL == nil {
-		eurl, err := u.ComputeExternalURL(s.Web.ExternalURL, (s.Web.ListenAddresses)[0])
+		eurl, err := cli.ComputeExternalURL(s.Web.ExternalURL, (s.Web.ListenAddresses)[0])
 		if err != nil {
 			panic(fmt.Errorf("cannot compute external url based on the listening address: %w", err))
 		}
@@ -90,7 +85,7 @@ func (s *Serve) PrefixRoute(routes ...string) string {
 	return prefixedRoute
 }
 
-func (s Serve) Run(common *cmd.Commons) error {
+func (s Serve) Run(common *cli.Commons) error {
 	logger, err := common.Logger()
 	if err != nil {
 		return err
@@ -105,16 +100,7 @@ func (s Serve) Run(common *cmd.Commons) error {
 		zap.String("build-source", common.Version.BuildSource()),
 	)
 
-	cl := pkg.NewClient(s.Host, pkg.NewAuth(s.Username, s.Password), logger)
-
-	// The collector decodes the sensors endpoint into its own model (to cover
-	// fields the go-unifi-protect Sensor type does not expose, such as air
-	// quality), so it needs the underlying REST requester rather than the typed
-	// V1 API. The client returned by NewClient embeds it.
-	requester, ok := cl.(rest.Requester)
-	if !ok {
-		return fmt.Errorf("unifi client does not expose a REST requester")
-	}
+	client := internal.NewClient(s.Host, s.Username, s.Password)
 
 	reg := prometheus.NewRegistry()
 
@@ -123,10 +109,10 @@ func (s Serve) Run(common *cmd.Commons) error {
 		zap.Duration("min-detection-span", s.MinDetectionSpan),
 		zap.Duration("timeout", s.Timeout),
 	)
-	reg.MustRegister(internal.NewCollector(requester, s.MinDetectionSpan, s.Timeout, true))
+	reg.MustRegister(internal.NewCollector(client, s.MinDetectionSpan, s.Timeout, true))
 
 	logger.Debug("Registering common build info collector")
-	reg.MustRegister(buildinfo.NewCollector(common.Version.BuildInfo))
+	reg.MustRegister(cli.NewBuildInfoCollector(common.Version.BuildInfo))
 
 	logger.Debug("Registering golang build info collector")
 	reg.MustRegister(collectors.NewBuildInfoCollector())
@@ -170,7 +156,7 @@ func (s Serve) Run(common *cmd.Commons) error {
 		}
 
 		logger.Info(fmt.Sprintf("HTTP Server started on %s", s.GetExternalURL()))
-		if er := web.ListenAndServe(srv, flagConfig, zapadapter.ZapAdapter("HTTP server", logger)); er != nil {
+		if er := web.ListenAndServe(srv, flagConfig, cli.NewHTTPLogger("HTTP server", logger)); er != nil {
 			defer close(srvc)
 			srvc <- er
 		}

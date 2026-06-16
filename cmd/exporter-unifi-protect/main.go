@@ -7,7 +7,7 @@ import (
 
 	"github.com/alecthomas/kong"
 	"github.com/merlindorin/exporter-unifi-protect/cmd/exporter-unifi-protect/commads"
-	c "github.com/merlindorin/go-shared/pkg/cmd"
+	"github.com/merlindorin/exporter-unifi-protect/internal/cli"
 )
 
 const (
@@ -26,26 +26,26 @@ var (
 )
 
 func main() {
-	cli := CMD{
-		Commons: &c.Commons{
-			Version: c.NewVersion(name, version, commit, buildSource, date),
-			Licence: c.NewLicence(license),
+	app := CMD{
+		Commons: &cli.Commons{
+			Version: cli.NewVersion(name, version, commit, buildSource, date),
+			Licence: cli.NewLicence(license),
 		},
 		Serve: &commads.Serve{},
 	}
 
 	ctx := kong.Parse(
-		&cli,
+		&app,
 		kong.Name(name),
 		kong.Description(description),
 		kong.UsageOnError(),
 		kong.Configuration(kongyaml.Loader, "/etc/unifi-protect/config.yaml", "~/.hoomy/unifi-protect.yaml"),
 	)
 
-	ctx.FatalIfErrorf(ctx.Run(cli.Commons))
+	ctx.FatalIfErrorf(ctx.Run(app.Commons))
 }
 
 type CMD struct {
-	*c.Commons
+	*cli.Commons
 	Serve *commads.Serve `cmd:"serve"`
 }

@@ -53,25 +53,26 @@ There are currently **no Go unit tests** in the repo (`internal/sense.go` is an 
 The flow is small and linear — three pieces:
 
 1. **`cmd/exporter-unifi-protect/main.go`** — wires the CLI with [kong](https://github.com/alecthomas/kong).
-   The root `CMD` struct embeds `*c.Commons` (from the external `merlindorin/go-shared` module,
-   which provides version, license, and logger plumbing) and registers the `Serve` command.
-   Build-time vars (`version`, `commit`, `date`, `buildSource`, `license`) are injected via ldflags.
+   The root `CMD` struct embeds `*cli.Commons` (the local `internal/cli` package, which provides the
+   version/licence subcommands and logger setup) and registers the `Serve` command. Build-time vars
+   (`version`, `commit`, `date`, `buildSource`, `license`) are injected via ldflags.
 
 2. **`cmd/exporter-unifi-protect/commads/serve.go`** — (note the misspelled `commads` package dir).
-   The `Serve` command holds all flags. `Run` constructs a UniFi Protect API client from
-   `merlindorin/go-unifi-protect`, type-asserts it to the underlying `rest.Requester` (which the
-   client embeds — the collector needs raw REST access, not the typed `V1` API), builds a
-   `prometheus.Registry`, registers the custom collector plus standard Go/build-info collectors,
-   and serves via the prometheus exporter-toolkit `web` package with graceful SIGTERM shutdown. It
-   also handles external-URL / route-prefix logic mirroring Prometheus's own behavior.
+   The `Serve` command holds all flags. `Run` constructs an `internal.Client` (the UniFi Protect
+   API client), builds a `prometheus.Registry`, registers the custom collector plus standard
+   Go/build-info collectors, and serves via the prometheus exporter-toolkit `web` package with
+   graceful SIGTERM shutdown. It also handles external-URL / route-prefix logic mirroring
+   Prometheus's own behavior (`cli.ComputeExternalURL`, `cli.NewHTTPLogger`).
 
-3. **`internal/collector.go` + `internal/sensor.go`** — the `Collector` implements
-   `prometheus.Collector`. On each `Collect` (bounded by `--timeout`) it GETs
-   `/proxy/protect/api/sensors` and decodes it into the **exporter-local `Sensor` model**
-   (`sensor.go`), *not* the `go-unifi-protect` `v1.Sensor` type. We model it locally because that
-   upstream type lacks fields we need (the `airQuality` block) and types many readings as
-   non-nullable, which produced misleading zeros. Per sensor it emits environment readings,
-   battery, bluetooth, air-quality readings, boolean device-status gauges, and timestamp gauges.
+3. **`internal/collector.go` + `internal/sensor.go` + `internal/client.go`** — the `Collector`
+   implements `prometheus.Collector`. On each `Collect` (bounded by `--timeout`) it calls
+   `client.ListSensors`, which GETs `/proxy/protect/api/sensors` and decodes it into the
+   **exporter-local `Sensor` model** (`sensor.go`). We model it locally so we control the schema —
+   the field set covers the `airQuality` block and types many readings as nullable pointers (see
+   presence-gating below). `client.go` is a self-contained UniFi client: login → cache the `TOKEN`
+   cookie (a JWT, read only for its `exp`) + `X-CSRF-Token` → replay both, re-login on expiry.
+   Per sensor the collector emits environment readings, battery, bluetooth, air-quality readings,
+   boolean device-status gauges, and timestamp gauges.
 
 ### Key behaviors to know
 
@@ -93,16 +94,15 @@ The flow is small and linear — three pieces:
   `Describe`, and emit it in `collectSensor` from the corresponding `Sensor` field (gated on
   presence if the field is a pointer/optional).
 
-## External module dependencies
+## Dependencies
 
-Two first-party modules do most of the heavy lifting and are pinned to commit pseudo-versions in
-`go.mod` (vendored under `vendor/`):
-- `github.com/merlindorin/go-unifi-protect` — the UniFi Protect API client (auth, base REST/WS
-  transport). Note: its `v1.Sensor` type is **incomplete** (no air-quality fields, several readings
-  typed non-nullable), which is why the collector decodes the sensors endpoint into its own model
-  via the embedded `rest.Requester` rather than calling `Sensors.List`.
-- `github.com/merlindorin/go-shared` — CLI commons, zap logger adapter, buildinfo collector, the
-  `rest`/`do` HTTP request helpers, and URL helpers.
+This project is self-contained: the UniFi Protect client (`internal/client.go`) and CLI/web
+plumbing (`internal/cli`) are implemented in-repo on top of the standard library, so there are **no
+first-party `merlindorin/*` dependencies** (they were removed — see git history). Direct deps are
+all widely-used libraries: `alecthomas/kong` (+`kong-yaml`) for the CLI, `prometheus/client_golang`
++ `prometheus/exporter-toolkit` for metrics/serving, `go.uber.org/zap` for logging, and
+`golang-jwt/jwt/v5` (used only to read the session token's expiry). Deps are vendored under
+`vendor/`; run `go mod tidy && go mod vendor` after changing them.
 
 ## Deployment
 

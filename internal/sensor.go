@@ -1,22 +1,12 @@
 package internal
 
-import (
-	"context"
-
-	"github.com/merlindorin/go-shared/pkg/net/do"
-	"github.com/merlindorin/go-shared/pkg/net/rest"
-)
-
-// sensorsAPIPath is the UniFi Protect endpoint that lists every adopted sensor.
-const sensorsAPIPath = "/proxy/protect/api/sensors"
-
-// Sensor is an exporter-local model of a UniFi Protect sensor. It is decoded
-// directly from the Protect API rather than relying on the go-unifi-protect
-// Sensor type so that we can model fields that type does not expose yet (the
-// air-quality block) and decode the many fields that are null on devices which
-// do not support them (for example, environmental stats on the UP Air Quality
-// sensor) as pointers, so absent readings can be skipped instead of exported as
-// a misleading zero.
+// Sensor is an exporter-local model of a UniFi Protect sensor, decoded directly
+// from the Protect API (see client.go). We model it ourselves so we can cover
+// fields the API returns that are easy to get wrong: the air-quality block, and
+// the many readings that are null on devices which do not support them (for
+// example, environmental stats on the UP Air Quality sensor) — those are
+// pointers so absent readings can be skipped instead of exported as a
+// misleading zero.
 type Sensor struct {
 	ID               string `json:"id"`
 	Name             string `json:"name"`
@@ -92,9 +82,4 @@ type AirQuality struct {
 	PM10p0      Measure `json:"pm10p0"`
 	Humidity    Measure `json:"humidity"`
 	Temperature Measure `json:"temperature"`
-}
-
-// listSensors fetches every sensor from the Protect API into sensors.
-func listSensors(ctx context.Context, requester rest.Requester, sensors *[]Sensor) error {
-	return requester.New(do.WithPath(sensorsAPIPath)).GET(ctx, do.WithUnmarshalBody(sensors))
 }
