@@ -76,9 +76,11 @@ func (s *Serve) PrefixRoute(routes ...string) string {
 	// routePrefix must always be at least '/'.
 	prefixedRoute = "/" + strings.Trim(prefixedRoute, "/")
 
-	// routePrefix requires path to have trailing "/" in order
-	// for browsers to interpret the path-relative path correctly, instead of stripping it.
-	if prefixedRoute != "/" {
+	// Only the bare route prefix (the landing page, called with no routes) gets
+	// a trailing slash, so browsers resolve its path-relative links (e.g.
+	// "metrics") correctly. Concrete endpoints such as /metrics must not have a
+	// trailing slash, otherwise the mux 3xx-redirects requests for them.
+	if len(routes) == 0 && prefixedRoute != "/" {
 		prefixedRoute += "/"
 	}
 
