@@ -5,19 +5,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Overview
 
 A Prometheus exporter for UniFi Protect. It authenticates against a UniFi Protect
-(Dream Machine) host, polls sensor data on each scrape, and exposes it as Prometheus
-metrics over HTTP. There is a single subcommand: `serve`.
+(Dream Machine / UNVR) host, polls sensor data on each scrape, and exposes it as Prometheus
+metrics over HTTP. The primary subcommand is `serve` (plus `version` and `licence`).
 
 ## Build & Run
 
 ```shell
-# Build (note: the README's `go build ./cmd` is outdated — main is one level deeper)
-go build ./cmd/exporter-unifi-protect
+# Build (the main package lives one level below the repo root)
+go build -o exporter-unifi-protect ./cmd/exporter-unifi-protect
 
-# Run
+# Run (flags are --host/--username/--password, not --unifi-*)
 ./exporter-unifi-protect serve --help
-./exporter-unifi-protect serve \
-  --unifi-host https://<dream-machine> --unifi-username <user> --unifi-password <pass>
+./exporter-unifi-protect serve --host https://<console> --username <user> --password <pass>
 ```
 
 Config is layered (later sources override earlier): a `.env` file in the working directory (loaded by
@@ -33,23 +32,36 @@ exporter-toolkit web config format).
 
 ## Lint, Test, Release
 
-Tooling is managed by [aqua](https://aquaproj.github.io/) and orchestrated with
-[go-task](https://taskfile.dev). Most `.tk/*/Taskfile.yaml` files and generated configs
-(`.golangci.yaml`, `.github/workflows/*.yml`, `install.sh`) are **machine-generated and marked
-"DO NOT EDIT"** — they come from remote taskfiles (`TASK_X_REMOTE_TASKFILES=1` in `.envrc`).
-Don't hand-edit generated files; change the generating task instead.
-
 ```shell
-task golangci:lint    # lint (golangci-lint via aqua, strict ruleset)
-task golangci:fix     # lint --fix
-task                  # run all "*:default" tasks
-goreleaser release    # cross-compiles linux/darwin × amd64/arm64, builds scratch Docker image
+go build ./...            # build
+go test ./...             # tests (hermetic, no network — see Testing)
+golangci-lint run ./...   # lint — golangci-lint v2 (config .golangci.yaml is version: "2")
+gofmt -l internal/ cmd/   # formatting check
 ```
 
-golangci-lint is run with a very strict config (most linters enabled). If you don't have aqua
-installed, you can run `golangci-lint run` directly.
+Lint uses a strict golangci-lint **v2** ruleset. Two gosec rules are intentionally excluded in
+`.golangci.yaml`: **G117** (exported `Password` fields are intentional credential flags) and **G704**
+(SSRF taint — the request target is the operator-configured UniFi host by design). CI runs lint
+(`.github/workflows/golangci.yml`, Go 1.23 + golangci-lint v2) and, on `v*` tags, a goreleaser
+release (`.github/workflows/goreleaser.yml`) that cross-compiles linux/darwin × amd64/arm64 and
+pushes `ghcr.io/drewstreib/exporter-unifi-protect:{<tag>,latest}` (single-arch linux/amd64 scratch
+image; no signing).
 
-There are currently **no Go unit tests** in the repo (`internal/sense.go` is an empty stub).
+> The repo still carries `.tk/` taskfiles and aqua/go-task scaffolding, but the key configs
+> (`.golangci.yaml`, the two workflows, `.goreleaser.yaml`) have been **hand-edited and have diverged**
+> from that generator. Do not re-run the `task *:boilerplate` / `*:ci` regeneration tasks — they will
+> revert the hand edits (golangci-lint v2 migration, Go 1.23, cosign removal, the drewstreib rename).
+
+### Testing
+
+Tests live in `internal/` and are hermetic:
+
+- `collector_test.go` — drives `collectSensor` over real captured payloads in `internal/testdata/`
+  (e.g. `up-airquality.json`), asserting the right metrics appear and unsupported ones are absent.
+- `cli/dotenv_test.go` — the `.env` loader (parsing, precedence, missing/malformed files).
+- `upstream_test.go` — asserts the collector still declares every `sensor_*` family the original
+  merlindorin v0.0.8 exporter exposed (fixture `testdata/upstream-v0.0.8.metrics`), guarding the
+  refactor against silently dropping a metric.
 
 ## Architecture
 
@@ -91,6 +103,11 @@ The flow is small and linear — three pieces:
   collector skips a metric when its value is `nil` — so a sensor only emits the metrics it actually
   supports, instead of exporting a misleading `0`. The `measure()` helper enforces this for any
   `{value, status}` reading.
+- **Unified temp/humidity**: the UP Air Quality sensor reports temperature/humidity inside its
+  `airQuality` block (`stats.*` is null), but the collector surfaces them on the **common**
+  `sensor_temperature_celsius` / `sensor_humidity_percentage` (falling back to `airQuality` when
+  `stats` is absent), so every sensor is queryable uniformly. The air-quality-only readings (aqi,
+  co2, pm1p0/2p5/4p0/10p0, voc, tvoc, vape) use `sensor_air_quality_*`.
 - **Error handling**: the collector is constructed with `reportErrors=true`; an API failure emits an
   invalid metric rather than silently dropping data.
 - Adding a new metric means: add a `*prometheus.Desc` field, init it in `NewCollector`, send it in
@@ -109,7 +126,9 @@ all widely-used libraries: `alecthomas/kong` (+`kong-yaml`) for the CLI, `promet
 
 ## Deployment
 
-- `Dockerfile` builds a `FROM scratch` image with default `CMD ["serve"]`.
-- `compose/compose.yaml` runs the exporter alongside Prometheus + Grafana.
+- `Dockerfile` builds a `FROM scratch` image with default `CMD ["serve"]`; releases publish it to
+  `ghcr.io/drewstreib/exporter-unifi-protect` (`:<tag>` and `:latest`).
+- `compose/compose.yaml` runs the exporter (listening on `:9090`, scraped by Prometheus at
+  `unifi-protect:9090`) alongside Prometheus + Grafana; it reads `../.env`.
 - `helm/exporter-unifi-protect/` is a Helm chart.
-- `grafana/` contains an importable example dashboard.
+- `grafana/single-sensor.json` is an importable example dashboard.
