@@ -20,9 +20,12 @@ go build ./cmd/exporter-unifi-protect
   --unifi-host https://<dream-machine> --unifi-username <user> --unifi-password <pass>
 ```
 
-Config is layered (later sources override earlier): YAML files (`/etc/unifi-protect/config.yaml`,
-`~/.hoomy/unifi-protect.yaml`) → environment variables (`UNIFI_HOST`, `UNIFI_USERNAME`,
-`UNIFI_PASSWORD`, etc.) → CLI flags. Use a **local** UniFi account, not a Ubiquiti SSO account.
+Config is layered (later sources override earlier): a `.env` file in the working directory (loaded by
+`cli.LoadDotEnv` in `main`, never overriding real env vars) → environment variables → YAML files
+(`/etc/unifi-protect/config.yaml`, `~/.hoomy/unifi-protect.yaml`) → CLI flags. **Every** flag has an
+env var: `kong.DefaultEnvars("UNIFI")` auto-derives `UNIFI_<FLAG_NAME>` (e.g.
+`UNIFI_WEB_LISTEN_ADDRESSES`), and the required ones keep explicit names (`UNIFI_HOST`,
+`UNIFI_USERNAME`, `UNIFI_PASSWORD`). Use a **local** UniFi account, not a Ubiquiti SSO account.
 
 Metrics are served at `/metrics` (default listen `:9090`), with `/-/healthy` and an HTML status
 page at the route prefix. TLS/basic-auth are configured via `--web.config.file` (prometheus

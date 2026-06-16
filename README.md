@@ -67,8 +67,21 @@ Alternatively, if you prefer a non-containerized setup:
 
 ## Configuration
 
-Configuration is managed via `.env` and `.envrc` files. Refer to these files for environment variables that can be
-adjusted to match your UniFi Protect setup and preferences.
+Every command-line flag can also be set via an environment variable. The three required settings are `UNIFI_HOST`,
+`UNIFI_USERNAME` and `UNIFI_PASSWORD` (use a local, read-only account); all other flags follow the pattern
+`UNIFI_<FLAG_NAME>` with dots and dashes replaced by underscores — for example `--web.listen-addresses` becomes
+`UNIFI_WEB_LISTEN_ADDRESSES` and `--min-detection-span` becomes `UNIFI_MIN_DETECTION_SPAN`. Run `serve --help` to see
+the variable for each flag.
+
+On startup the exporter loads a `.env` file from the working directory if present. Real environment variables always
+take precedence over the file, so shell exports and docker-compose `env_file` values are never overridden. Copy the
+provided example and fill it in:
+
+```shell
+cp .env.example .env
+# edit .env with your UNIFI_HOST / UNIFI_USERNAME / UNIFI_PASSWORD, then:
+./exporter-unifi-protect serve
+```
 
 ## Usage
 
