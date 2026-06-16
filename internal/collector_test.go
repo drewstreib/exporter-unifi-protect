@@ -4,6 +4,7 @@ package internal
 import (
 	"encoding/json"
 	"math"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -58,6 +59,19 @@ func mustDecode(t *testing.T, raw string) *Sensor {
 	return &s
 }
 
+// loadSensor decodes a real captured Protect payload from testdata. These
+// fixtures double as reference samples of the API response for each device type.
+func loadSensor(t *testing.T, path string) *Sensor {
+	t.Helper()
+
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read fixture %q: %v", path, err)
+	}
+
+	return mustDecode(t, string(raw))
+}
+
 func assertValue(t *testing.T, got map[string]float64, name string, want float64) {
 	t.Helper()
 
@@ -80,51 +94,9 @@ func assertAbsent(t *testing.T, got map[string]float64, name string) {
 	}
 }
 
-// airQualityJSON is the real payload reported by a UP Air Quality sensor.
-const airQualityJSON = `{
-  "type": "UP-AirQuality",
-  "name": "up-aq-back",
-  "firmwareVersion": "1.0.12",
-  "hardwareRevision": null,
-  "nvrMac": "E438832F5900",
-  "id": "6a31a74400183e03e4106cd4",
-  "marketName": "UP Air Quality",
-  "modelKey": "sensor",
-  "isConnected": true,
-  "isAdopted": true,
-  "upSince": 1781640895033,
-  "lastSeen": 1781649480033,
-  "connectedSince": 1781641041327,
-  "leakDetectedAt": null,
-  "externalLeakDetectedAt": null,
-  "isOpened": null,
-  "openStatusChangedAt": null,
-  "motionDetectedAt": null,
-  "stats": {
-    "light": { "value": null, "status": "unknown" },
-    "humidity": { "value": null, "status": "unknown" },
-    "temperature": { "value": null, "status": "unknown" }
-  },
-  "airQuality": {
-    "aqi": { "value": 7, "status": "neutral" },
-    "vape": { "value": 0, "status": "safe" },
-    "tvoc": { "value": 5.8, "status": "neutral" },
-    "pm1p0": { "value": 0.8, "status": "neutral" },
-    "pm2p5": { "value": 1.79, "status": "neutral" },
-    "pm4p0": { "value": 2.5, "status": "neutral" },
-    "pm10p0": { "value": 2.9, "status": "neutral" },
-    "humidity": { "value": 51, "status": "neutral" },
-    "temperature": { "value": 25.4, "status": "neutral" },
-    "voc": { "value": 67, "status": "neutral" },
-    "co2": { "value": 452, "status": "neutral" }
-  },
-  "bluetoothConnectionState": null,
-  "batteryStatus": { "percentage": null, "isLow": false }
-}`
-
 func TestCollectAirQualitySensor(t *testing.T) {
 	c := NewCollector(nil, time.Minute, time.Second, true)
-	got := collect(t, c, mustDecode(t, airQualityJSON))
+	got := collect(t, c, loadSensor(t, "testdata/up-airquality.json"))
 
 	// Air-quality readings are exported.
 	assertValue(t, got, "sensor_air_quality_aqi", 7)

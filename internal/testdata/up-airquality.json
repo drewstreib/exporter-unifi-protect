@@ -1,0 +1,304 @@
+{
+  "mac": "74F92CF81BC3",
+  "host": "192.168.43.159",
+  "connectionHost": "192.168.42.11",
+  "type": "UP-AirQuality",
+  "sysid": "0xaea6",
+  "name": "up-aq-back",
+  "upSince": 1781640895033,
+  "uptime": 8585,
+  "lastSeen": 1781649480033,
+  "connectedSince": 1781641041327,
+  "state": "CONNECTED",
+  "lastDisconnect": 1781641038410,
+  "hardwareRevision": null,
+  "firmwareVersion": "1.0.12",
+  "previousFirmwareVersion": "0.1.6",
+  "previousFirmwareUrl": null,
+  "latestFirmwareVersion": "1.0.12",
+  "latestFirmwareSizeBytes": 1245172,
+  "firmwareBuild": "f93255.260605.1107",
+  "isUpdating": false,
+  "isDownloadingFW": false,
+  "isReverting": false,
+  "fwUpdateState": "upToDate",
+  "isAdopting": false,
+  "isRestoring": false,
+  "isAdopted": true,
+  "isAdoptedByOther": false,
+  "isProvisioned": false,
+  "isRebooting": false,
+  "isSshEnabled": false,
+  "canAdopt": false,
+  "isAttemptingToConnect": false,
+  "uplinkDevice": null,
+  "supportFileName": null,
+  "supportFileCreatedAt": null,
+  "supportFileState": null,
+  "guid": "e1f8ba7e-08aa-4f71-b9bf-cc9bf5e56e8b",
+  "anonymousDeviceId": "07d66d91-4e4c-5371-aa18-0f13f825f4be",
+  "isBlockedByArmMode": false,
+  "isMotionDetected": false,
+  "mountType": "none",
+  "leakDetectedAt": null,
+  "externalLeakDetectedAt": null,
+  "tamperingDetectedAt": null,
+  "isOpened": null,
+  "openStatusChangedAt": null,
+  "alarmTriggeredAt": null,
+  "motionDetectedAt": null,
+  "alarmSilencedAt": null,
+  "troubleSilencedAt": null,
+  "scheduleMode": "always",
+  "armProfileIds": null,
+  "hasCustomSensitivityWhenArmed": false,
+  "wiredConnectionState": {
+    "phyRate": "100"
+  },
+  "wifiConnectionState": {
+    "channel": null,
+    "frequency": null,
+    "phyRate": null,
+    "txRate": null,
+    "signalQuality": null,
+    "ssid": null,
+    "bssid": null,
+    "apName": null,
+    "experience": null,
+    "signalStrength": null,
+    "connectivity": null
+  },
+  "smokeStatus": {
+    "enabled": false,
+    "ready": false,
+    "testing": false,
+    "alarmSilenced": false,
+    "smokeAlarm": false,
+    "coAlarm": false,
+    "troubleHushed": false,
+    "batteryLow": false,
+    "cleanSmokeSensor": false,
+    "smokeSensorFault": false,
+    "coSensorFault": false,
+    "endOfLife": false,
+    "smokeValue": 0,
+    "coValue": 0,
+    "batteryVoltage": 0,
+    "wasMounted": false
+  },
+  "stats": {
+    "light": {
+      "value": null,
+      "status": "unknown"
+    },
+    "humidity": {
+      "value": null,
+      "status": "unknown"
+    },
+    "temperature": {
+      "value": null,
+      "status": "unknown"
+    }
+  },
+  "airQuality": {
+    "aqi": {
+      "value": 7,
+      "status": "neutral"
+    },
+    "vape": {
+      "value": 0,
+      "status": "safe"
+    },
+    "tvoc": {
+      "value": 5.8,
+      "status": "neutral"
+    },
+    "pm1p0": {
+      "value": 0.8,
+      "status": "neutral"
+    },
+    "pm2p5": {
+      "value": 1.79,
+      "status": "neutral"
+    },
+    "pm4p0": {
+      "value": 2.5,
+      "status": "neutral"
+    },
+    "pm10p0": {
+      "value": 2.9,
+      "status": "neutral"
+    },
+    "humidity": {
+      "value": 51,
+      "status": "neutral"
+    },
+    "temperature": {
+      "value": 25.4,
+      "status": "neutral"
+    },
+    "voc": {
+      "value": 67,
+      "status": "neutral"
+    },
+    "co2": {
+      "value": 452,
+      "status": "neutral"
+    }
+  },
+  "alarmSettings": {
+    "isEnabled": false
+  },
+  "lightSettings": {
+    "isEnabled": false,
+    "lowThreshold": null,
+    "highThreshold": null,
+    "margin": 10
+  },
+  "motionSettings": {
+    "isEnabled": false,
+    "sensitivity": 100,
+    "sensitivityWhenArmed": 50
+  },
+  "glassBreakSettings": {
+    "isEnabled": false,
+    "sensitivity": 25,
+    "sensitivityWhenArmed": 50
+  },
+  "temperatureSettings": {
+    "isEnabled": false,
+    "lowThreshold": null,
+    "highThreshold": null,
+    "margin": 0.1
+  },
+  "humiditySettings": {
+    "isEnabled": false,
+    "lowThreshold": null,
+    "highThreshold": null,
+    "margin": 1
+  },
+  "ledSettings": {
+    "isEnabled": true,
+    "activityFeedback": true
+  },
+  "leakSettings": {
+    "isInternalEnabled": true,
+    "isExternalEnabled": false
+  },
+  "airQualitySettings": {
+    "readingInterval": null,
+    "alertInterval": null,
+    "ringLedMetric": 1,
+    "ringLedBrightness": 100,
+    "nightModeEnabled": true,
+    "nightModeStartTime": "21:00",
+    "nightModeEndTime": "06:00",
+    "nightModeBrightness": 10,
+    "aqiSettings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "vapeSensitivitySettings": {
+      "isEnabled": true,
+      "sensitivity": 50
+    },
+    "tvocSettings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "pm1p0Settings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "pm2p5Settings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "pm4p0Settings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "pm10p0Settings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "humiditySettings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "temperatureSettings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "vocSettings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "co2Settings": {
+      "isEnabled": true,
+      "lowThreshold": null,
+      "highThreshold": null
+    },
+    "vapeSettings": {
+      "isEnabled": true,
+      "lowThreshold": 0,
+      "highThreshold": 50
+    }
+  },
+  "camera": null,
+  "wirelessConnectionState": {
+    "functionButtonPressedAt": null,
+    "signalState": {
+      "signalQuality": null,
+      "signalStrength": null,
+      "signalNoiseRatio": null
+    },
+    "batteryStatus": {
+      "percentage": null,
+      "isLow": false
+    },
+    "bridge": null,
+    "bridgeCandidates": []
+  },
+  "wirelessConnectionSettings": {
+    "updateInterval": 300,
+    "supportedLoraSpreadingFactors": [],
+    "loraSpreadingFactor": null,
+    "chosenBridge": null
+  },
+  "id": "6a31a74400183e03e4106cd4",
+  "nvrMac": "E438832F5900",
+  "displayName": "up-aq-back",
+  "globalAlarmManagerScopeNames": [
+    "scope_all_devices",
+    "scope_all_vape_sensors",
+    "scope_all_extreme_values_sensors"
+  ],
+  "minFirmwareVersion": "1.0.0",
+  "releaseNotePath": "up-airquality",
+  "isConnected": true,
+  "platform": "esp32-d0wd",
+  "marketName": "UP Air Quality",
+  "connectionType": "ucp4",
+  "batteryStatus": {
+    "percentage": null,
+    "isLow": false,
+    "modelKey": "sensorBatteryStatus"
+  },
+  "bluetoothConnectionState": null,
+  "bridgeCandidates": [],
+  "functionButtonPressedAt": null,
+  "chosenBridge": null,
+  "updateInterval": 300,
+  "featureFlags": {},
+  "modelKey": "sensor"
+}
