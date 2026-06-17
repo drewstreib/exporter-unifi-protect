@@ -46,13 +46,6 @@ checksum:
 source:
   enabled: true
 
-# creates SBOMs of all archives and the source tarball using syft
-# https://goreleaser.com/customization/sbom
-sboms:
-  - artifacts: archive
-  - id: source # Two different sbom configurations need two different IDs
-    artifacts: source
-
 # build and push a multi-arch (amd64 + arm64) image with a single manifest
 # https://goreleaser.com/customization/dockers_v2
 dockers_v2:
