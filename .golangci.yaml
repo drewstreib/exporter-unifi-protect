@@ -24,7 +24,7 @@ linters:
     - gocyclo
     - godot
     - gomoddirectives
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - gosec
     - govet
@@ -103,21 +103,20 @@ linters:
           paramsOnly: false
         underef:
           skipRecvDeref: false
-    gomodguard:
+    gomodguard_v2:
       blocked:
-        modules:
-          - github.com/golang/protobuf:
-              recommendations:
-                - google.golang.org/protobuf
-              reason: see https://developers.google.com/protocol-buffers/docs/reference/go/faq#modules
-          - github.com/satori/go.uuid:
-              recommendations:
-                - github.com/google/uuid
-              reason: satori's package is not maintained
-          - github.com/gofrs/uuid:
-              recommendations:
-                - github.com/google/uuid
-              reason: gofrs' package is not go module
+        - module: github.com/golang/protobuf
+          recommendations:
+            - google.golang.org/protobuf
+          reason: see https://developers.google.com/protocol-buffers/docs/reference/go/faq#modules
+        - module: github.com/satori/go.uuid
+          recommendations:
+            - github.com/google/uuid
+          reason: satori's package is not maintained
+        - module: github.com/gofrs/uuid
+          recommendations:
+            - github.com/google/uuid
+          reason: gofrs' package is not go module
     gosec:
       excludes:
         # G117: flags exported struct fields literally named "Password"; these
@@ -126,6 +125,10 @@ linters:
         # G704: SSRF taint analysis — the request target is the operator-
         # configured UniFi host by design.
         - G704
+        # G124: http.Cookie without Secure/HttpOnly/SameSite. Those are Set-Cookie
+        # (server→client) attributes; this is an OUTBOUND request cookie, where
+        # net/http serialises name=value only and drops them. False positive.
+        - G124
     govet:
       disable:
         - fieldalignment

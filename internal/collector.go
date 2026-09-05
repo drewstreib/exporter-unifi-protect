@@ -12,6 +12,10 @@ import (
 
 const (
 	microsec = 1000
+
+	// labelName is the per-sensor display-name label carried by every metric
+	// this collector emits.
+	labelName = "name"
 )
 
 // sensorLister is the subset of the Protect client the collector needs.
@@ -74,7 +78,7 @@ type Collector struct {
 }
 
 func NewCollector(client sensorLister, minDetectionSpan time.Duration, timeout time.Duration, reportError bool) *Collector {
-	idName := []string{"id", "name"}
+	idName := []string{"id", labelName}
 
 	return &Collector{
 		client:       client,
@@ -83,11 +87,11 @@ func NewCollector(client sensorLister, minDetectionSpan time.Duration, timeout t
 
 		minDetectionSpan: minDetectionSpan,
 
-		sensorInfoGauge:              prometheus.NewDesc("sensor_info", "Sensor info.", []string{"id", "name", "firmwareVersion", "hardwareRevision", "nvr_mac", "brand", "type", "model", "market_name"}, nil),
+		sensorInfoGauge:              prometheus.NewDesc("sensor_info", "Sensor info.", []string{"id", labelName, "firmwareVersion", "hardwareRevision", "nvr_mac", "brand", "type", "model", "market_name"}, nil),
 		temperatureGauge:             prometheus.NewDesc("sensor_temperature_celsius", "Sensor monitor for temperature (input).", idName, nil),
 		lightGauge:                   prometheus.NewDesc("sensor_light_lux", "Sensor monitor for light (input).", idName, nil),
 		humidityGauge:                prometheus.NewDesc("sensor_humidity_percentage", "Sensor monitor for humidity (input).", idName, nil),
-		batteryStatusPercentageGauge: prometheus.NewDesc("sensor_battery_status_percentage", "Sensor battery status.", []string{"id", "name", "is_low"}, nil),
+		batteryStatusPercentageGauge: prometheus.NewDesc("sensor_battery_status_percentage", "Sensor battery status.", []string{"id", labelName, "is_low"}, nil),
 		bluetoothSignalStrengthGauge: prometheus.NewDesc("sensor_bluetooth_signal_strength", "Sensor bluetooth signal strength (input).", idName, nil),
 		bluetoothSignalQualityGauge:  prometheus.NewDesc("sensor_bluetooth_signal_quality", "Sensor bluetooth signal quality (input).", idName, nil),
 		isUpdatingGauge:              prometheus.NewDesc("sensor_is_updating", "Sensor IsUpdatingGauge status (input).", idName, nil),
@@ -101,8 +105,8 @@ func NewCollector(client sensorLister, minDetectionSpan time.Duration, timeout t
 		isSSHEnabledGauge:            prometheus.NewDesc("sensor_is_ssh_enabled", "Sensor IsSshEnabledGauge status (input).", idName, nil),
 		canAdoptGauge:                prometheus.NewDesc("sensor_can_adopt", "Sensor CanAdoptGauge status (input).", idName, nil),
 		isAttemptingToConnectGauge:   prometheus.NewDesc("sensor_is_attempting_to_connect", "Sensor IsAttemptingToConnectGauge status (input).", idName, nil),
-		isMotionDetectedGauge:        prometheus.NewDesc("sensor_is_motion_detected", "Sensor IsMotionDetectedGauge status (input).", []string{"id", "name", "detected_period"}, nil),
-		isOpenedGauge:                prometheus.NewDesc("sensor_is_opened", "Sensor IsOpenedGauge status (input).", []string{"id", "name", "detected_period"}, nil),
+		isMotionDetectedGauge:        prometheus.NewDesc("sensor_is_motion_detected", "Sensor IsMotionDetectedGauge status (input).", []string{"id", labelName, "detected_period"}, nil),
+		isOpenedGauge:                prometheus.NewDesc("sensor_is_opened", "Sensor IsOpenedGauge status (input).", []string{"id", labelName, "detected_period"}, nil),
 		isConnectedGauge:             prometheus.NewDesc("sensor_is_connected", "Sensor IsConnectedGauge status (input).", idName, nil),
 		upSinceGauge:                 prometheus.NewDesc("sensor_up_since_gauge", "Sensor UpSince status (input).", idName, nil),
 		lastSeenGauge:                prometheus.NewDesc("sensor_last_seen_gauge", "Sensor LastSeen status (input).", idName, nil),

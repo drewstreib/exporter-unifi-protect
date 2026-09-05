@@ -29,5 +29,8 @@ jobs:
         uses: golangci/golangci-lint-action@v9
         with:
           # golangci-lint v2 (config is version "2"); keep in sync with local dev.
-          version: v2.10.1
+          # ⚠ Must be built with a Go >= go.mod's `go` directive, or it refuses to
+          # load the config at all ("language version ... lower than the targeted
+          # Go version"). v2.13.2 is built with go1.27. Bump this with the toolchain.
+          version: v2.13.2
 
