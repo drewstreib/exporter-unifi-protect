@@ -24,7 +24,7 @@ leak/motion/open detection, and device status.
 - A UniFi console (Dream Machine / UNVR / Cloud Key) running Protect.
 - A **local** UniFi account (username + password). Ubiquiti SSO / 2FA accounts won't work; create a
   dedicated local, read-only user.
-- Docker, or Go 1.22+ to build from source.
+- Docker, or Go 1.27.1+ to build from source (the `go` directive in `go.mod` is the floor).
 
 ## Quick start
 

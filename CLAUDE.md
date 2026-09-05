@@ -42,15 +42,23 @@ gofmt -l internal/ cmd/   # formatting check
 Lint uses a strict golangci-lint **v2** ruleset. Two gosec rules are intentionally excluded in
 `.golangci.yaml`: **G117** (exported `Password` fields are intentional credential flags) and **G704**
 (SSRF taint — the request target is the operator-configured UniFi host by design). CI runs lint
-(`.github/workflows/golangci.yml`, Go 1.23 + golangci-lint v2) and, on `v*` tags, a goreleaser
+(`.github/workflows/golangci.yml`, golangci-lint v2) and, on `v*` tags, a goreleaser
 release (`.github/workflows/goreleaser.yml`) that cross-compiles linux/darwin × amd64/arm64 and
-pushes `ghcr.io/drewstreib/exporter-unifi-protect:{<tag>,latest}` (single-arch linux/amd64 scratch
-image; no signing).
+pushes `ghcr.io/drewstreib/exporter-unifi-protect:{<tag>,latest}` — a **multi-arch (linux/amd64 +
+linux/arm64) OCI index** over the scratch image; no signing. (This previously claimed single-arch
+linux/amd64, which was wrong: the published index carries both, and the consuming cluster runs it
+on arm64.)
+
+⚠ **Neither workflow hardcodes a Go version any more — both use `go-version-file: go.mod`** (changed
+2026-09-04). A literal there is a silent trap: it leaves CI building on an old toolchain however far
+`go.mod` moves, which is how this repo shipped a go1.23.12 binary carrying 43 stdlib CVEs. Bump the
+`go` directive and CI follows.
 
 > The repo still carries `.tk/` taskfiles and aqua/go-task scaffolding, but the key configs
 > (`.golangci.yaml`, the two workflows, `.goreleaser.yaml`) have been **hand-edited and have diverged**
 > from that generator. Do not re-run the `task *:boilerplate` / `*:ci` regeneration tasks — they will
-> revert the hand edits (golangci-lint v2 migration, Go 1.23, cosign removal, the drewstreib rename).
+> revert the hand edits (golangci-lint v2 migration, `go-version-file` in both workflows, cosign
+> removal, the drewstreib rename).
 
 ### Testing
 
